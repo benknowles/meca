@@ -75,47 +75,47 @@ defmodule Meca500 do
     msg
   end
 
-  def activate_robot(pid), do: build_command("ActivateRobot", []) |> run_command(pid)
+  def activate_robot(pid), do: "ActivateRobot" |> run_command(pid)
 
-  def deactivate_robot(pid), do: build_command("DeactivateRobot", []) |> run_command(pid)
+  def deactivate_robot(pid), do: "DeactivateRobot" |> run_command(pid)
 
-  def activate_sim(pid), do: build_command("ActivateSim", []) |> run_command(pid)
+  def activate_sim(pid), do: "ActivateSim" |> run_command(pid)
 
-  def deactivate_sim(pid), do: build_command("DeactivateSim", []) |> run_command(pid)
+  def deactivate_sim(pid), do: "DeactivateSim" |> run_command(pid)
 
-  def switch_to_ethercat(pid), do: build_command("SwitchToEtherCAT", []) |> run_command(pid)
+  def switch_to_ethercat(pid), do: "SwitchToEtherCAT" |> run_command(pid)
 
-  def get_conf(pid), do: build_command("GetConf", []) |> run_command(pid)
+  def get_conf(pid), do: "GetConf" |> run_command(pid)
 
-  def get_joints(pid), do: build_command("GetJoints", []) |> run_command(pid)
+  def get_joints(pid), do: "GetJoints" |> run_command(pid)
 
-  def get_pose(pid), do: build_command("GetPose", []) |> run_command(pid)
+  def get_pose(pid), do: "GetPose" |> run_command(pid)
 
-  def pause_motion(pid), do: build_command("PauseMotion", []) |> run_command(pid)
+  def pause_motion(pid), do: "PauseMotion" |> run_command(pid)
 
-  def resume_motion(pid), do: build_command("ResumeMotion", []) |> run_command(pid)
+  def resume_motion(pid), do: "ResumeMotion" |> run_command(pid)
 
-  def clear_motion(pid), do: build_command("ClearMotion", []) |> run_command(pid)
+  def clear_motion(pid), do: "ClearMotion" |> run_command(pid)
 
-  def brakes_on(pid), do: build_command("BrakesOn", []) |> run_command(pid)
+  def brakes_on(pid), do: "BrakesOn" |> run_command(pid)
 
-  def brakes_off(pid), do: build_command("BrakesOff", []) |> run_command(pid)
+  def brakes_off(pid), do: "BrakesOff" |> run_command(pid)
 
-  def home(pid), do: build_command("Home", []) |> run_command(pid)
+  def home(pid), do: "Home" |> run_command(pid)
 
-  def gripper_open(pid), do: build_command("GripperOpen", []) |> run_command(pid)
+  def gripper_open(pid), do: "GripperOpen" |> run_command(pid)
 
-  def gripper_close(pid), do: build_command("GripperClose", []) |> run_command(pid)
+  def gripper_close(pid), do: "GripperClose" |> run_command(pid)
 
   def get_status_robot(pid) do
-    build_command("GetStatusRobot", [])
+    "GetStatusRobot"
     |> run_command(pid)
     |> (&Enum.zip(@robot_status_keys, &1)).()
     |> Enum.into(%{})
   end
 
   def get_status_gripper(pid) do
-    build_command("GetStatusGripper", [])
+    "GetStatusGripper"
     |> run_command(pid)
     |> (&Enum.zip(@gripper_status_keys, &1)).()
     |> Enum.into(%{})
