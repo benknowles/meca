@@ -1,7 +1,7 @@
 defmodule Meca500 do
   use GenServer
 
-  @initial_state %{socket: nil}
+  @initial_state %{socket: nil, host: nil, port: nil, eob: 1, eom: 1, error: false, queue: false}
 
   @eom_commands [
     "MoveJoints",
@@ -34,17 +34,24 @@ defmodule Meca500 do
     :force_overload
   ]
 
+  def xyz do
+    {:ok, pid} = Meca500.start_link(%{host: '127.0.0.1', port: 10000})
+    Meca500.activate_robot(pid)
+    Meca500.set_eob(pid, 0)
+    Meca500.activate_robot(pid)
+  end
+
   def run_command(cmd, pid) do
     GenServer.call(pid, {:command, cmd})
   end
 
-  def start_link do
-    GenServer.start_link(__MODULE__, @initial_state)
+  def start_link(opts \\ %{}) do
+    GenServer.start_link(__MODULE__, Map.merge(@initial_state, opts))
   end
 
   def init(state) do
     opts = [:binary, packet: :line, line_delimiter: 0, buffer: 1024, active: false]
-    {:ok, socket} = :gen_tcp.connect('localhost', 10000, opts)
+    {:ok, socket} = :gen_tcp.connect(state[:host], state[:port], opts)
     {:ok, %{state | socket: socket}}
   end
 
@@ -54,6 +61,10 @@ defmodule Meca500 do
     {:ok, resp} = :gen_tcp.recv(socket, 0)
 
     {:reply, resp, state}
+  end
+
+  def handle_call({:update_state, map}, _, state) do
+    {:reply, :ok, Map.merge(state, map)}
   end
 
   def encode(msg) do
@@ -110,12 +121,14 @@ defmodule Meca500 do
     |> Enum.into(%{})
   end
 
-  def set_eob(pid, state, e) do
-    {build_command("SetEOB", [e]) |> run_command(pid), %{state | eob: e}}
+  def set_eob(pid, e) do
+    GenServer.call(pid, {:update_state, %{eob: e}})
+    build_command("SetEOB", [e]) |> run_command(pid)
   end
 
-  def set_eom(pid, state, e) do
-    {build_command("SetEOM", [e]) |> run_command(pid), %{state | eom: e}}
+  def set_eom(pid, e) do
+    GenServer.call(pid, {:update_state, %{eom: e}})
+    build_command("SetEOM", [e]) |> run_command(pid)
   end
 
   def delay(pid, t) do
