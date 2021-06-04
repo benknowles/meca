@@ -229,7 +229,7 @@ defmodule Meca500 do
   end
 
   defp parse_response_code(resp) do
-    resp |> String.slice(1..4)
+    resp |> String.slice(1..4) |> String.to_integer()
   end
 
   defp parse_response_body(resp) do

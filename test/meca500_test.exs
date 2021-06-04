@@ -29,8 +29,8 @@ defmodule Meca500Test do
   end
 
   test "response parsing" do
-    assert Meca500.parse_response("[1234][This is a test.]\0") == {"1234", "This is a test."}
-    assert Meca500.parse_response("[1234][1,2,3,4]\0") == {"1234", "1,2,3,4"}
-    assert Meca500.parse_response("[1234][This is a test.]") == {"1234", "This is a test."}
+    assert Meca500.parse_response("[1234][This is a test.]\0") == {1234, "This is a test."}
+    assert Meca500.parse_response("[1234][1,2,3,4]\0") == {1234, "1,2,3,4"}
+    assert Meca500.parse_response("[1234][This is a test.]") == {1234, "This is a test."}
   end
 end
