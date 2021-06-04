@@ -215,6 +215,19 @@ defmodule Meca500 do
     end
   end
 
+  def parse_response(resp) do
+    trimmed = resp |> String.trim("\0")
+    {parse_response_code(trimmed), parse_response_body(trimmed)}
+  end
+
+  defp parse_response_code(resp) do
+    resp |> String.slice(1..4)
+  end
+
+  defp parse_response_body(resp) do
+    resp |> String.slice(7..-2)
+  end
+
   def answer_codes("ActivateRobot", _), do: [2000, 2001]
   def answer_codes("ActivateSim", _), do: [2045]
   def answer_codes("ClearMotion", _), do: [2044]
