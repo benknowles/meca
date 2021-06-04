@@ -1,7 +1,15 @@
 defmodule Meca500 do
   use GenServer
 
-  @initial_state %{socket: nil, host: nil, port: nil, eob: 1, eom: 1, error: false, queue: false}
+  @initial_state %{
+    socket: nil,
+    host: nil,
+    port: nil,
+    eob: 1,
+    eom: 1,
+    error_mode: false,
+    queue: false
+  }
 
   @eom_commands [
     "MoveJoints",
@@ -63,10 +71,6 @@ defmodule Meca500 do
     {:reply, resp, state}
   end
 
-  def handle_call({:update_state, map}, _, state) do
-    {:reply, :ok, Map.merge(state, map)}
-  end
-
   def encode(msg) do
     "#{msg}\0"
   end
@@ -121,13 +125,17 @@ defmodule Meca500 do
     |> Enum.into(%{})
   end
 
+  def in_error_mode?(pid) do
+    :sys.get_state(pid) |> Map.get(:error_mode)
+  end
+
   def set_eob(pid, e) do
-    GenServer.call(pid, {:update_state, %{eob: e}})
+    :sys.replace_state(pid, fn state -> %{state | eob: e} end)
     build_command("SetEOB", [e]) |> run_command(pid)
   end
 
   def set_eom(pid, e) do
-    GenServer.call(pid, {:update_state, %{eom: e}})
+    :sys.replace_state(pid, fn state -> %{state | eom: e} end)
     build_command("SetEOM", [e]) |> run_command(pid)
   end
 
