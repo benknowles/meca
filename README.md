@@ -2,6 +2,8 @@
 
 Elixir driver for the Mecademic Meca500 R3.
 
+** This is a work in progress and not production ready. **
+
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed

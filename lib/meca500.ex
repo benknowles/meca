@@ -15,12 +15,26 @@ defmodule Meca500 do
     "SetWRF"
   ]
 
-  # def xyz do
-  #   {:ok, pid} = start_link()
-  #   command(pid, "hello\0")
-  # end
+  @robot_status_keys [
+    :activated,
+    :homing,
+    :simulation,
+    :error,
+    :paused,
+    :eob,
+    :eom
+  ]
 
-  def command(pid, cmd) do
+  @gripper_status_keys [
+    :gripper_enabled,
+    :homing_state,
+    :holding_part,
+    :limit_reached,
+    :error_state,
+    :force_overload
+  ]
+
+  def run_command(cmd, pid) do
     GenServer.call(pid, {:command, cmd})
   end
 
@@ -43,11 +57,138 @@ defmodule Meca500 do
   end
 
   def encode(msg) do
-    msg
+    "#{msg}\0"
   end
 
   def decode(msg) do
     msg
+  end
+
+  def activate_robot(pid), do: build_command("ActivateRobot", []) |> run_command(pid)
+
+  def deactivate_robot(pid), do: build_command("DeactivateRobot", []) |> run_command(pid)
+
+  def activate_sim(pid), do: build_command("ActivateSim", []) |> run_command(pid)
+
+  def deactivate_sim(pid), do: build_command("DeactivateSim", []) |> run_command(pid)
+
+  def switch_to_ethercat(pid), do: build_command("SwitchToEtherCAT", []) |> run_command(pid)
+
+  def get_conf(pid), do: build_command("GetConf", []) |> run_command(pid)
+
+  def get_joints(pid), do: build_command("GetJoints", []) |> run_command(pid)
+
+  def get_pose(pid), do: build_command("GetPose", []) |> run_command(pid)
+
+  def pause_motion(pid), do: build_command("PauseMotion", []) |> run_command(pid)
+
+  def resume_motion(pid), do: build_command("ResumeMotion", []) |> run_command(pid)
+
+  def clear_motion(pid), do: build_command("ClearMotion", []) |> run_command(pid)
+
+  def brakes_on(pid), do: build_command("BrakesOn", []) |> run_command(pid)
+
+  def brakes_off(pid), do: build_command("BrakesOff", []) |> run_command(pid)
+
+  def home(pid), do: build_command("Home", []) |> run_command(pid)
+
+  def gripper_open(pid), do: build_command("GripperOpen", []) |> run_command(pid)
+
+  def gripper_close(pid), do: build_command("GripperClose", []) |> run_command(pid)
+
+  def get_status_robot(pid) do
+    build_command("GetStatusRobot", [])
+    |> run_command(pid)
+    |> (&Enum.zip(@robot_status_keys, &1)).()
+    |> Enum.into(%{})
+  end
+
+  def get_status_gripper(pid) do
+    build_command("GetStatusGripper", [])
+    |> run_command(pid)
+    |> (&Enum.zip(@gripper_status_keys, &1)).()
+    |> Enum.into(%{})
+  end
+
+  def set_eob(pid, state, e) do
+    {build_command("SetEOB", [e]) |> run_command(pid), %{state | eob: e}}
+  end
+
+  def set_eom(pid, state, e) do
+    {build_command("SetEOM", [e]) |> run_command(pid), %{state | eom: e}}
+  end
+
+  def delay(pid, t) do
+    build_command("Delay", [t]) |> run_command(pid)
+  end
+
+  def move_joints(pid, theta_1, theta_2, theta_3, theta_4, theta_5, theta_6) do
+    build_command("MoveJoints", [theta_1, theta_2, theta_3, theta_4, theta_5, theta_6])
+    |> run_command(pid)
+  end
+
+  def move_lin(pid, x, y, z, alpha, beta, gamma) do
+    build_command("MoveLin", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
+  end
+
+  def move_lin_rel_trf(pid, x, y, z, alpha, beta, gamma) do
+    build_command("MoveLinRelTRF", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
+  end
+
+  def move_lin_rel_wrf(pid, x, y, z, alpha, beta, gamma) do
+    build_command("MoveLinRelWRF", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
+  end
+
+  def move_pose(pid, x, y, z, alpha, beta, gamma) do
+    build_command("MovePose", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
+  end
+
+  def set_blending(pid, p) do
+    build_command("SetBlending", [p]) |> run_command(pid)
+  end
+
+  def set_auto_conf(pid, e) do
+    build_command("SetAutoConf", [e]) |> run_command(pid)
+  end
+
+  def set_cart_acc(pid, p) do
+    build_command("SetCartAcc", [p]) |> run_command(pid)
+  end
+
+  def set_cart_ang_vel(pid, w) do
+    build_command("SetCartAngVel", [w]) |> run_command(pid)
+  end
+
+  def set_cart_lin_vel(pid, v) do
+    build_command("SetCartLinVel", [v]) |> run_command(pid)
+  end
+
+  def set_conf(pid, c1, c3, c5) do
+    build_command("SetConf", [c1, c3, c5]) |> run_command(pid)
+  end
+
+  def set_gripper_force(pid, p) do
+    build_command("SetGripperForce", [p]) |> run_command(pid)
+  end
+
+  def set_gripper_vel(pid, p) do
+    build_command("SetGripperVel", [p]) |> run_command(pid)
+  end
+
+  def set_joint_acc(pid, p) do
+    build_command("SetJointAcc", [p]) |> run_command(pid)
+  end
+
+  def set_joint_vel(pid, velocity) do
+    build_command("SetJointVel", [velocity]) |> run_command(pid)
+  end
+
+  def set_trf(pid, x, y, z, alpha, beta, gamma) do
+    build_command("SetTRF", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
+  end
+
+  def set_wrf(pid, x, y, z, alpha, beta, gamma) do
+    build_command("SetWRF", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
   end
 
   def build_command(command, args) do
@@ -73,14 +214,14 @@ defmodule Meca500 do
   def answer_codes("GetStatusGripper", _), do: [2079]
   def answer_codes("GetPose", _), do: [2027]
   def answer_codes("Home", _), do: [2002, 2003]
-  def answer_codes("PauseMotion", %{eom: 1} = state), do: [2042, 3004]
+  def answer_codes("PauseMotion", %{eom: 1}), do: [2042, 3004]
   def answer_codes("PauseMotion", _), do: [2042]
   def answer_codes("ResetError", _), do: [2005, 2006]
   def answer_codes("ResumeMotion", _), do: [2043]
   def answer_codes("SetEOB", _), do: [2054, 2055]
   def answer_codes("SetEOM", _), do: [2052, 2053]
 
-  def answer_codes(command, %{eob: eob, eom: eom} = state) do
+  def answer_codes(command, %{eob: eob, eom: eom}) do
     []
     |> append_eob_answer_code(eob)
     |> append_eom_answer_code(command, eom)
