@@ -43,6 +43,17 @@ defmodule Meca500 do
     :force_overload
   ]
 
+  @float_response_codes [
+    2026,
+    2027
+  ]
+
+  @integer_response_codes [
+    2029,
+    2007,
+    2079
+  ]
+
   def xyz do
     {:ok, pid} = Meca500.start_link(%{host: '127.0.0.1', port: 10000})
     Meca500.activate_robot(pid)
@@ -259,6 +270,23 @@ defmodule Meca500 do
 
   defp parse_response_body(resp) do
     resp |> String.slice(7..-2)
+  end
+
+  def decode_response_body(code, body) do
+    cond do
+      Enum.member?(@float_response_codes, code) ->
+        body
+        |> String.split(",")
+        |> Enum.map(&String.to_float/1)
+
+      Enum.member?(@integer_response_codes, code) ->
+        body
+        |> String.split(",")
+        |> Enum.map(&String.to_integer/1)
+
+      true ->
+        body
+    end
   end
 
   def answer_codes("ActivateRobot", _), do: [2000, 2001]
