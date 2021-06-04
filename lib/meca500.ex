@@ -7,6 +7,7 @@ defmodule Meca500 do
     port: nil,
     eob: 1,
     eom: 1,
+    user_eom: nil,
     error_mode: false,
     queue: false
   }
@@ -137,6 +138,30 @@ defmodule Meca500 do
   def set_eom(pid, e) do
     :sys.replace_state(pid, fn state -> %{state | eom: e} end)
     build_command("SetEOM", [e]) |> run_command(pid)
+  end
+
+  def set_queue(pid, e) do
+    cond do
+      e == 1 ->
+        eom = :sys.get_state(pid) |> Map.get(:eom)
+
+        :sys.replace_state(pid, fn state ->
+          %{state | queue: true, user_eom: eom}
+        end)
+
+        set_eom(pid, 0)
+
+      true ->
+        user_eom = :sys.get_state(pid) |> Map.get(:user_eom)
+
+        :sys.replace_state(pid, fn state ->
+          %{state | queue: false}
+        end)
+
+        set_eom(pid, user_eom)
+    end
+
+    :sys.get_state(pid) |> Map.get(:queue)
   end
 
   def delay(pid, t) do
