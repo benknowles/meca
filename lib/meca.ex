@@ -1,6 +1,26 @@
 defmodule Meca do
   use GenServer
 
+  @moduledoc """
+  Module for communicating and controlling a Mecademic Robot over TCP.
+
+  ## Example
+
+      {:ok, pid} = Meca.start_link(%{host: '127.0.0.1', port: 10000})
+
+      Meca.activate_robot(pid)
+      Meca.home(pid)
+      Meca.set_blending(pid, 0)
+      Meca.set_joint_vel(pid, 100)
+
+      Meca.move_joints(pid, 0, 0, 0, 170, 115, 175)
+      Meca.move_joints(pid, 0, 0, 0, -170, -115, -175)
+      Meca.move_joints(pid, 0, -70, 70, 0, 0, 0)
+      Meca.move_joints(pid, 0, 90, -135, 0, 0, 0)
+
+      Meca.gripper_close(pid)
+  """
+
   @initial_state %{
     socket: nil,
     host: nil,
@@ -55,14 +75,6 @@ defmodule Meca do
   ]
 
   @type standard_command_response :: String.t()
-
-  @doc false
-  def xyz do
-    {:ok, pid} = Meca.start_link(%{host: '127.0.0.1', port: 10_000})
-    Meca.activate_robot(pid)
-    Meca.set_eob(pid, 0)
-    Meca.activate_robot(pid)
-  end
 
   @spec run_command(String.t(), pid()) :: standard_command_response()
 
@@ -190,6 +202,10 @@ defmodule Meca do
 
   @spec set_eob(pid(), integer()) :: standard_command_response()
 
+  @doc """
+  Sets End of Block answer active or inactive in the Mecademic Robot. Parameter `e`
+  enables (1) EOB or disables (0) EOB.
+  """
   def set_eob(pid, e) do
     :sys.replace_state(pid, fn state -> %{state | eob: e} end)
     build_command("SetEOB", [e]) |> run_command(pid)
@@ -197,6 +213,10 @@ defmodule Meca do
 
   @spec set_eom(pid(), integer()) :: standard_command_response()
 
+  @doc """
+  Sets End of Movement answer active or inactive in the Mecademic Robot. Parameter `e`
+  enables (1) EOM or disables (0) EOM.
+  """
   def set_eom(pid, e) do
     :sys.replace_state(pid, fn state -> %{state | eom: e} end)
     build_command("SetEOM", [e]) |> run_command(pid)
@@ -204,6 +224,10 @@ defmodule Meca do
 
   @spec set_queue(pid(), integer()) :: boolean()
 
+  @doc """
+  Enables the queueing of move commands for blending. Parameter `e` enables (1) queueing
+  or disables (0) queueing.
+  """
   def set_queue(pid, e) do
     if e == 1 do
       eom = :sys.get_state(pid) |> Map.get(:eom)
@@ -300,6 +324,10 @@ defmodule Meca do
 
   @spec set_conf(pid(), integer(), integer(), integer()) :: standard_command_response()
 
+  @doc """
+  Sets the desired Mecademic Robot inverse kinematic configuration to be observed in
+  the MovePose command. Parameters `c1`, `c3`, and `c5` should be either `1` or `-1`.
+  """
   def set_conf(pid, c1, c3, c5) do
     build_command("SetConf", [c1, c3, c5]) |> run_command(pid)
   end
