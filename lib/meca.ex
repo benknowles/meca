@@ -54,12 +54,17 @@ defmodule Meca do
     2079
   ]
 
+  @type standard_command_response :: String.t()
+
+  @doc false
   def xyz do
-    {:ok, pid} = Meca.start_link(%{host: '127.0.0.1', port: 10000})
+    {:ok, pid} = Meca.start_link(%{host: '127.0.0.1', port: 10_000})
     Meca.activate_robot(pid)
     Meca.set_eob(pid, 0)
     Meca.activate_robot(pid)
   end
+
+  @spec run_command(String.t(), pid()) :: standard_command_response()
 
   def run_command(cmd, pid) do
     GenServer.call(pid, {:command, cmd})
@@ -83,45 +88,83 @@ defmodule Meca do
     {:reply, resp, state}
   end
 
+  @spec encode(String.t()) :: String.t()
+
   def encode(msg) do
     "#{msg}\0"
   end
+
+  @spec decode(String.t()) :: String.t()
 
   def decode(msg) do
     msg
   end
 
+  @spec activate_robot(pid()) :: standard_command_response()
+
   def activate_robot(pid), do: "ActivateRobot" |> run_command(pid)
+
+  @spec deactivate_robot(pid()) :: standard_command_response()
 
   def deactivate_robot(pid), do: "DeactivateRobot" |> run_command(pid)
 
+  @spec activate_sim(pid()) :: standard_command_response()
+
   def activate_sim(pid), do: "ActivateSim" |> run_command(pid)
+
+  @spec deactivate_sim(pid()) :: standard_command_response()
 
   def deactivate_sim(pid), do: "DeactivateSim" |> run_command(pid)
 
+  @spec switch_to_ethercat(pid()) :: standard_command_response()
+
   def switch_to_ethercat(pid), do: "SwitchToEtherCAT" |> run_command(pid)
+
+  @spec get_conf(pid()) :: standard_command_response()
 
   def get_conf(pid), do: "GetConf" |> run_command(pid)
 
+  @spec get_joints(pid()) :: standard_command_response()
+
   def get_joints(pid), do: "GetJoints" |> run_command(pid)
+
+  @spec get_pose(pid()) :: standard_command_response()
 
   def get_pose(pid), do: "GetPose" |> run_command(pid)
 
+  @spec pause_motion(pid()) :: standard_command_response()
+
   def pause_motion(pid), do: "PauseMotion" |> run_command(pid)
+
+  @spec resume_motion(pid()) :: standard_command_response()
 
   def resume_motion(pid), do: "ResumeMotion" |> run_command(pid)
 
+  @spec clear_motion(pid()) :: standard_command_response()
+
   def clear_motion(pid), do: "ClearMotion" |> run_command(pid)
+
+  @spec brakes_on(pid()) :: standard_command_response()
 
   def brakes_on(pid), do: "BrakesOn" |> run_command(pid)
 
+  @spec brakes_off(pid()) :: standard_command_response()
+
   def brakes_off(pid), do: "BrakesOff" |> run_command(pid)
+
+  @spec home(pid()) :: standard_command_response()
 
   def home(pid), do: "Home" |> run_command(pid)
 
+  @spec gripper_open(pid()) :: standard_command_response()
+
   def gripper_open(pid), do: "GripperOpen" |> run_command(pid)
 
+  @spec gripper_close(pid()) :: standard_command_response()
+
   def gripper_close(pid), do: "GripperClose" |> run_command(pid)
+
+  @spec get_status_robot(pid()) :: %{atom() => integer()}
 
   def get_status_robot(pid) do
     "GetStatusRobot"
@@ -130,6 +173,8 @@ defmodule Meca do
     |> Enum.into(%{})
   end
 
+  @spec get_status_gripper(pid()) :: %{atom() => integer()}
+
   def get_status_gripper(pid) do
     "GetStatusGripper"
     |> run_command(pid)
@@ -137,124 +182,168 @@ defmodule Meca do
     |> Enum.into(%{})
   end
 
+  @spec in_error_mode?(pid()) :: boolean()
+
   def in_error_mode?(pid) do
     :sys.get_state(pid) |> Map.get(:error_mode)
   end
+
+  @spec set_eob(pid(), integer()) :: standard_command_response()
 
   def set_eob(pid, e) do
     :sys.replace_state(pid, fn state -> %{state | eob: e} end)
     build_command("SetEOB", [e]) |> run_command(pid)
   end
 
+  @spec set_eom(pid(), integer()) :: standard_command_response()
+
   def set_eom(pid, e) do
     :sys.replace_state(pid, fn state -> %{state | eom: e} end)
     build_command("SetEOM", [e]) |> run_command(pid)
   end
 
+  @spec set_queue(pid(), integer()) :: boolean()
+
   def set_queue(pid, e) do
-    cond do
-      e == 1 ->
-        eom = :sys.get_state(pid) |> Map.get(:eom)
+    if e == 1 do
+      eom = :sys.get_state(pid) |> Map.get(:eom)
 
-        :sys.replace_state(pid, fn state ->
-          %{state | queue: true, user_eom: eom}
-        end)
+      :sys.replace_state(pid, fn state ->
+        %{state | queue: true, user_eom: eom}
+      end)
 
-        set_eom(pid, 0)
+      set_eom(pid, 0)
+    else
+      user_eom = :sys.get_state(pid) |> Map.get(:user_eom)
 
-      true ->
-        user_eom = :sys.get_state(pid) |> Map.get(:user_eom)
+      :sys.replace_state(pid, fn state ->
+        %{state | queue: false}
+      end)
 
-        :sys.replace_state(pid, fn state ->
-          %{state | queue: false}
-        end)
-
-        set_eom(pid, user_eom)
+      set_eom(pid, user_eom)
     end
 
     :sys.get_state(pid) |> Map.get(:queue)
   end
 
+  @spec delay(pid(), integer()) :: standard_command_response()
+
   def delay(pid, t) do
     build_command("Delay", [t]) |> run_command(pid)
   end
+
+  @spec move_joints(pid(), float(), float(), float(), float(), float(), float()) ::
+          standard_command_response()
 
   def move_joints(pid, theta_1, theta_2, theta_3, theta_4, theta_5, theta_6) do
     build_command("MoveJoints", [theta_1, theta_2, theta_3, theta_4, theta_5, theta_6])
     |> run_command(pid)
   end
 
+  @spec move_lin(pid(), float(), float(), float(), float(), float(), float()) ::
+          standard_command_response()
+
   def move_lin(pid, x, y, z, alpha, beta, gamma) do
     build_command("MoveLin", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
   end
+
+  @spec move_lin_rel_trf(pid(), float(), float(), float(), float(), float(), float()) ::
+          standard_command_response()
 
   def move_lin_rel_trf(pid, x, y, z, alpha, beta, gamma) do
     build_command("MoveLinRelTRF", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
   end
 
+  @spec move_lin_rel_wrf(pid(), float(), float(), float(), float(), float(), float()) ::
+          standard_command_response()
+
   def move_lin_rel_wrf(pid, x, y, z, alpha, beta, gamma) do
     build_command("MoveLinRelWRF", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
   end
+
+  @spec move_pose(pid(), float(), float(), float(), float(), float(), float()) ::
+          standard_command_response()
 
   def move_pose(pid, x, y, z, alpha, beta, gamma) do
     build_command("MovePose", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
   end
 
+  @spec set_blending(pid(), float()) :: standard_command_response()
+
   def set_blending(pid, p) do
     build_command("SetBlending", [p]) |> run_command(pid)
   end
+
+  @spec set_auto_conf(pid(), integer()) :: standard_command_response()
 
   def set_auto_conf(pid, e) do
     build_command("SetAutoConf", [e]) |> run_command(pid)
   end
 
+  @spec set_cart_acc(pid(), float()) :: standard_command_response()
+
   def set_cart_acc(pid, p) do
     build_command("SetCartAcc", [p]) |> run_command(pid)
   end
+
+  @spec set_cart_ang_vel(pid(), float()) :: standard_command_response()
 
   def set_cart_ang_vel(pid, w) do
     build_command("SetCartAngVel", [w]) |> run_command(pid)
   end
 
+  @spec set_cart_lin_vel(pid(), float()) :: standard_command_response()
+
   def set_cart_lin_vel(pid, v) do
     build_command("SetCartLinVel", [v]) |> run_command(pid)
   end
+
+  @spec set_conf(pid(), integer(), integer(), integer()) :: standard_command_response()
 
   def set_conf(pid, c1, c3, c5) do
     build_command("SetConf", [c1, c3, c5]) |> run_command(pid)
   end
 
+  @spec set_gripper_force(pid(), float()) :: standard_command_response()
+
   def set_gripper_force(pid, p) do
     build_command("SetGripperForce", [p]) |> run_command(pid)
   end
+
+  @spec set_gripper_vel(pid(), float()) :: standard_command_response()
 
   def set_gripper_vel(pid, p) do
     build_command("SetGripperVel", [p]) |> run_command(pid)
   end
 
+  @spec set_joint_acc(pid(), float()) :: standard_command_response()
+
   def set_joint_acc(pid, p) do
     build_command("SetJointAcc", [p]) |> run_command(pid)
   end
 
-  @spec set_joint_vel(pid(), float()) :: String.t()
+  @spec set_joint_vel(pid(), float()) :: standard_command_response()
 
   def set_joint_vel(pid, velocity) do
     build_command("SetJointVel", [velocity]) |> run_command(pid)
   end
 
-  @spec set_trf(pid(), float(), float(), float(), float(), float(), float()) :: String.t()
+  @spec set_trf(pid(), float(), float(), float(), float(), float(), float()) ::
+          standard_command_response()
 
   def set_trf(pid, x, y, z, alpha, beta, gamma) do
     build_command("SetTRF", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
   end
 
-  @spec set_wrf(pid(), float(), float(), float(), float(), float(), float()) :: String.t()
+  @spec set_wrf(pid(), float(), float(), float(), float(), float(), float()) ::
+          standard_command_response()
 
   def set_wrf(pid, x, y, z, alpha, beta, gamma) do
     build_command("SetWRF", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
   end
 
-  @spec build_command(String.t(), list(integer() | float() | String.t())) :: String.t()
+  @spec build_command(String.t(), list(integer() | float() | String.t())) ::
+          standard_command_response()
 
   def build_command(command, args) do
     case Enum.count(args) do
@@ -308,7 +397,7 @@ defmodule Meca do
 
   @spec answer_codes(String.t(), %{optional(:eob) => integer(), optional(:eom) => integer()}) ::
           list(integer())
-
+  def answer_codes(command, state)
   def answer_codes("ActivateRobot", _), do: [2000, 2001]
   def answer_codes("ActivateSim", _), do: [2045]
   def answer_codes("ClearMotion", _), do: [2044]
@@ -344,12 +433,10 @@ defmodule Meca do
   @spec append_eom_answer_code(list(integer()), String.t(), integer()) :: list(integer())
 
   defp append_eom_answer_code(list, command, 1) do
-    cond do
-      Enum.member?(@eom_commands, command) ->
-        [3004 | list]
-
-      true ->
-        list
+    if Enum.member?(@eom_commands, command) do
+      [3004 | list]
+    else
+      list
     end
   end
 
