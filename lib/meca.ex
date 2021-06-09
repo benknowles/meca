@@ -1,4 +1,4 @@
-defmodule Meca500 do
+defmodule Meca do
   use GenServer
 
   @initial_state %{
@@ -55,10 +55,10 @@ defmodule Meca500 do
   ]
 
   def xyz do
-    {:ok, pid} = Meca500.start_link(%{host: '127.0.0.1', port: 10000})
-    Meca500.activate_robot(pid)
-    Meca500.set_eob(pid, 0)
-    Meca500.activate_robot(pid)
+    {:ok, pid} = Meca.start_link(%{host: '127.0.0.1', port: 10000})
+    Meca.activate_robot(pid)
+    Meca.set_eob(pid, 0)
+    Meca.activate_robot(pid)
   end
 
   def run_command(cmd, pid) do
@@ -236,17 +236,25 @@ defmodule Meca500 do
     build_command("SetJointAcc", [p]) |> run_command(pid)
   end
 
+  @spec set_joint_vel(pid(), float()) :: String.t()
+
   def set_joint_vel(pid, velocity) do
     build_command("SetJointVel", [velocity]) |> run_command(pid)
   end
+
+  @spec set_trf(pid(), float(), float(), float(), float(), float(), float()) :: String.t()
 
   def set_trf(pid, x, y, z, alpha, beta, gamma) do
     build_command("SetTRF", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
   end
 
+  @spec set_wrf(pid(), float(), float(), float(), float(), float(), float()) :: String.t()
+
   def set_wrf(pid, x, y, z, alpha, beta, gamma) do
     build_command("SetWRF", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
   end
+
+  @spec build_command(String.t(), list(integer() | float() | String.t())) :: String.t()
 
   def build_command(command, args) do
     case Enum.count(args) do
@@ -259,18 +267,27 @@ defmodule Meca500 do
     end
   end
 
+  @spec parse_response(String.t()) :: {integer(), String.t()}
+
   def parse_response(resp) do
     trimmed = resp |> String.trim("\0")
     {parse_response_code(trimmed), parse_response_body(trimmed)}
   end
 
+  @spec parse_response_code(String.t()) :: integer()
+
   defp parse_response_code(resp) do
     resp |> String.slice(1..4) |> String.to_integer()
   end
 
+  @spec parse_response_body(String.t()) :: String.t()
+
   defp parse_response_body(resp) do
     resp |> String.slice(7..-2)
   end
+
+  @spec decode_response_body(integer(), String.t()) ::
+          list(float()) | list(integer()) | String.t()
 
   def decode_response_body(code, body) do
     cond do
@@ -288,6 +305,9 @@ defmodule Meca500 do
         body
     end
   end
+
+  @spec answer_codes(String.t(), %{optional(:eob) => integer(), optional(:eom) => integer()}) ::
+          list(integer())
 
   def answer_codes("ActivateRobot", _), do: [2000, 2001]
   def answer_codes("ActivateSim", _), do: [2045]
@@ -316,8 +336,12 @@ defmodule Meca500 do
 
   def answer_codes(_, _), do: []
 
+  @spec append_eob_answer_code(list(integer()), integer()) :: list(integer())
+
   defp append_eob_answer_code(list, 1), do: [3012 | list]
   defp append_eob_answer_code(list, _), do: list
+
+  @spec append_eom_answer_code(list(integer()), String.t(), integer()) :: list(integer())
 
   defp append_eom_answer_code(list, command, 1) do
     cond do

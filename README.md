@@ -1,4 +1,4 @@
-# Meca500
+# Meca
 
 Elixir driver for the Mecademic Meca500 R3.
 
@@ -12,7 +12,7 @@ by adding `meca500` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:meca500, "~> 0.1.0"}
+    {:meca, "~> 0.1.0"}
   ]
 end
 ```

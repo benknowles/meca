@@ -1,9 +1,9 @@
-defmodule Meca500.MixProject do
+defmodule Meca.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :meca500,
+      app: :meca,
       version: "0.1.0",
       elixir: "~> 1.11",
       start_permanent: Mix.env() == :prod,
@@ -28,7 +28,8 @@ defmodule Meca500.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:excoveralls, "~> 0.10", only: :test}
+      {:excoveralls, "~> 0.10", only: :test},
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
     ]
   end
 end

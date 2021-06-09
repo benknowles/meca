@@ -20,7 +20,7 @@ erl_crash.dump
 *.ez
 
 # Ignore package tarball (built via "mix hex.build").
-meca500-*.tar
+meca-*.tar
 
 
 # Temporary files for e.g. tests
