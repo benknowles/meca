@@ -86,12 +86,14 @@ defmodule Meca do
     GenServer.start_link(__MODULE__, Map.merge(@initial_state, opts))
   end
 
+  @doc false
   def init(state) do
     opts = [:binary, packet: :line, line_delimiter: 0, buffer: 1024, active: false]
     {:ok, socket} = :gen_tcp.connect(state[:host], state[:port], opts)
     {:ok, %{state | socket: socket}}
   end
 
+  @doc false
   def handle_call({:command, cmd}, _, %{socket: socket} = state) do
     :ok = :gen_tcp.send(socket, encode(cmd))
 
@@ -114,22 +116,37 @@ defmodule Meca do
 
   @spec activate_robot(pid()) :: standard_command_response()
 
+  @doc """
+  Activates the Mecademic Robot.
+  """
   def activate_robot(pid), do: "ActivateRobot" |> run_command(pid)
 
   @spec deactivate_robot(pid()) :: standard_command_response()
 
+  @doc """
+  Deactivates the Mecademic Robot.
+  """
   def deactivate_robot(pid), do: "DeactivateRobot" |> run_command(pid)
 
   @spec activate_sim(pid()) :: standard_command_response()
 
+  @doc """
+  Activates the Mecademic Robot simulation mode.
+  """
   def activate_sim(pid), do: "ActivateSim" |> run_command(pid)
 
   @spec deactivate_sim(pid()) :: standard_command_response()
 
+  @doc """
+  Deactivates the Mecademic Robot simulation mode.
+  """
   def deactivate_sim(pid), do: "DeactivateSim" |> run_command(pid)
 
   @spec switch_to_ethercat(pid()) :: standard_command_response()
 
+  @doc """
+  Places the Mecademic Robot in EtherCAT mode.
+  """
   def switch_to_ethercat(pid), do: "SwitchToEtherCAT" |> run_command(pid)
 
   @spec get_conf(pid()) :: standard_command_response()
@@ -166,14 +183,23 @@ defmodule Meca do
 
   @spec home(pid()) :: standard_command_response()
 
+  @doc """
+  Homes the Mecademic Robot.
+  """
   def home(pid), do: "Home" |> run_command(pid)
 
   @spec gripper_open(pid()) :: standard_command_response()
 
+  @doc """
+  Opens the gripper of the end-effector.
+  """
   def gripper_open(pid), do: "GripperOpen" |> run_command(pid)
 
   @spec gripper_close(pid()) :: standard_command_response()
 
+  @doc """
+  Closes the gripper of the end-effector.
+  """
   def gripper_close(pid), do: "GripperClose" |> run_command(pid)
 
   @spec get_status_robot(pid()) :: %{atom() => integer()}
@@ -196,6 +222,9 @@ defmodule Meca do
 
   @spec in_error_mode?(pid()) :: boolean()
 
+  @doc """
+  Status method that checks whether the Mecademic Robot is in error mode.
+  """
   def in_error_mode?(pid) do
     :sys.get_state(pid) |> Map.get(:error_mode)
   end
@@ -252,6 +281,9 @@ defmodule Meca do
 
   @spec delay(pid(), integer()) :: standard_command_response()
 
+  @doc """
+  Gives the Mecademic Robot a wait time before performing another action.
+  """
   def delay(pid, t) do
     build_command("Delay", [t]) |> run_command(pid)
   end
@@ -259,6 +291,10 @@ defmodule Meca do
   @spec move_joints(pid(), float(), float(), float(), float(), float(), float()) ::
           standard_command_response()
 
+  @doc """
+  Moves the joints of the Mecademic Robot to the desired angles. Each theta argument corresponds
+  to a joint number.
+  """
   def move_joints(pid, theta_1, theta_2, theta_3, theta_4, theta_5, theta_6) do
     build_command("MoveJoints", [theta_1, theta_2, theta_3, theta_4, theta_5, theta_6])
     |> run_command(pid)
@@ -334,24 +370,38 @@ defmodule Meca do
 
   @spec set_gripper_force(pid(), float()) :: standard_command_response()
 
+  @doc """
+  Sets the Gripper's grip force. Parameter `p` should be between `1` and `100`.
+  """
   def set_gripper_force(pid, p) do
     build_command("SetGripperForce", [p]) |> run_command(pid)
   end
 
   @spec set_gripper_vel(pid(), float()) :: standard_command_response()
 
+  @doc """
+  Sets the Gripper fingers' velocity with respect to the gripper. Parameter `p` should be
+  between `1` and `100`.
+  """
   def set_gripper_vel(pid, p) do
     build_command("SetGripperVel", [p]) |> run_command(pid)
   end
 
   @spec set_joint_acc(pid(), float()) :: standard_command_response()
 
+  @doc """
+  Sets the acceleration of the joints. Parameter `p` should be between `1` and `100`.
+  """
   def set_joint_acc(pid, p) do
     build_command("SetJointAcc", [p]) |> run_command(pid)
   end
 
   @spec set_joint_vel(pid(), float()) :: standard_command_response()
 
+  @doc """
+  Sets the angular velocities of the Mecademic Robot's joints. `velocity` should be
+  between `1` and `100`.
+  """
   def set_joint_vel(pid, velocity) do
     build_command("SetJointVel", [velocity]) |> run_command(pid)
   end
@@ -359,6 +409,10 @@ defmodule Meca do
   @spec set_trf(pid(), float(), float(), float(), float(), float(), float()) ::
           standard_command_response()
 
+  @doc """
+  Sets the Mecademic Robot TRF at (x, y, z) and heading (alpha, beta, gamma) with respect
+  to the FRF.
+  """
   def set_trf(pid, x, y, z, alpha, beta, gamma) do
     build_command("SetTRF", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
   end
@@ -366,6 +420,10 @@ defmodule Meca do
   @spec set_wrf(pid(), float(), float(), float(), float(), float(), float()) ::
           standard_command_response()
 
+  @doc """
+  Sets the Mecademic Robot WRF at (x, y, z) and heading (alpha, beta, gamma) with respect
+  to the BRF.
+  """
   def set_wrf(pid, x, y, z, alpha, beta, gamma) do
     build_command("SetWRF", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
   end
@@ -373,6 +431,10 @@ defmodule Meca do
   @spec build_command(String.t(), list(integer() | float() | String.t())) ::
           standard_command_response()
 
+  @doc """
+  Builds the command string to send to the Mecademic Robot from the function name and
+  arguments the command needs.
+  """
   def build_command(command, args) do
     case Enum.count(args) do
       0 ->
@@ -425,6 +487,9 @@ defmodule Meca do
 
   @spec answer_codes(String.t(), %{optional(:eob) => integer(), optional(:eom) => integer()}) ::
           list(integer())
+  @doc """
+  Returns the list of possible answer codes for the given command and EOM/EOB enablement status.
+  """
   def answer_codes(command, state)
   def answer_codes("ActivateRobot", _), do: [2000, 2001]
   def answer_codes("ActivateSim", _), do: [2045]
