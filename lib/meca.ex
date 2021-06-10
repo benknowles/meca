@@ -6,7 +6,7 @@ defmodule Meca do
 
   ## Example
 
-      {:ok, pid} = Meca.start_link(%{host: '127.0.0.1', port: 10000})
+      {:ok, pid} = Meca.start(%{host: '127.0.0.1', port: 10000})
 
       Meca.activate_robot(pid)
       Meca.home(pid)
@@ -79,6 +79,14 @@ defmodule Meca do
     "There was no error to reset"
   ]
 
+  @socket_options [
+    :binary,
+    packet: :line,
+    line_delimiter: 0,
+    buffer: 1024,
+    active: false
+  ]
+
   @typedoc """
   A response from executing a command.
   """
@@ -108,11 +116,39 @@ defmodule Meca do
     GenServer.start_link(__MODULE__, Map.merge(@initial_state, opts))
   end
 
+  @doc """
+  Creates a new connection to a Mecademic Robot with the provided connection options.
+  Expects a map with a `host` and a `port`.
+  """
+  def start(opts \\ %{}) do
+    GenServer.start(__MODULE__, Map.merge(@initial_state, opts))
+  end
+
   @doc false
   def init(state) do
-    opts = [:binary, packet: :line, line_delimiter: 0, buffer: 1024, active: false]
-    {:ok, socket} = :gen_tcp.connect(state[:host], state[:port], opts)
-    {:ok, %{state | socket: socket}}
+    with {:ok, socket} <- :gen_tcp.connect(state[:host], state[:port], @socket_options, 100),
+         {:ok, resp} <- :gen_tcp.recv(socket, 0, 10_000),
+         {code, _body} <- parse_response(resp) do
+      case code do
+        3000 ->
+          # connection confirmation
+          {:ok, %{state | socket: socket}}
+
+        3001 ->
+          # another session is connected to the robot
+          {:stop, :existing_connection}
+
+        _ ->
+          # unexpected response
+          {:stop, {:unexpected_code, code}}
+      end
+    else
+      {:error, err} ->
+        {:stop, err}
+
+      err ->
+        {:stop, err}
+    end
   end
 
   @doc false
