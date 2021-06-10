@@ -328,7 +328,7 @@ defmodule Meca do
     :sys.get_state(pid) |> Map.get(:queue)
   end
 
-  @spec delay(pid(), integer()) :: standard_command_response()
+  @spec delay(pid(), float()) :: standard_command_response()
 
   @doc """
   Gives the Mecademic Robot a wait time before performing another action.
