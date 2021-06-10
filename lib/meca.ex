@@ -74,6 +74,11 @@ defmodule Meca do
     2079
   ]
 
+  @reset_error_responses [
+    "The error was reset",
+    "There was no error to reset"
+  ]
+
   @type standard_command_response :: String.t()
 
   @spec run_command(String.t(), pid()) :: standard_command_response()
@@ -246,7 +251,7 @@ defmodule Meca do
   def get_status_robot(pid) do
     "GetStatusRobot"
     |> run_command(pid)
-    |> (&Enum.zip(@robot_status_keys, &1)).()
+    |> then(&Enum.zip(@robot_status_keys, &1))
     |> Enum.into(%{})
   end
 
@@ -265,7 +270,7 @@ defmodule Meca do
   def get_status_gripper(pid) do
     "GetStatusGripper"
     |> run_command(pid)
-    |> (&Enum.zip(@gripper_status_keys, &1)).()
+    |> then(&Enum.zip(@gripper_status_keys, &1))
     |> Enum.into(%{})
   end
 
@@ -298,6 +303,22 @@ defmodule Meca do
   def set_eom(pid, e) do
     :sys.replace_state(pid, fn state -> %{state | eom: e} end)
     build_command("SetEOM", [e]) |> run_command(pid)
+  end
+
+  @spec reset_error(pid()) :: standard_command_response()
+
+  @doc """
+  Resets the error in the Mecademic Robot.
+  """
+  def reset_error(pid) do
+    "ResetError"
+    |> run_command(pid)
+    |> tap(fn response ->
+      # set the error_mode state to false if the response suggests the error was reset
+      :sys.replace_state(pid, fn state ->
+        %{state | error_mode: !Enum.member?(@reset_error_responses, response)}
+      end)
+    end)
   end
 
   @spec set_queue(pid(), integer()) :: boolean()
