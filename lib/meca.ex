@@ -83,10 +83,17 @@ defmodule Meca do
 
   @spec run_command(String.t(), pid()) :: standard_command_response()
 
+  @doc """
+  Sends a command to the Mecademic Robot and receives a decoded response.
+  """
   def run_command(cmd, pid) do
     GenServer.call(pid, {:command, cmd})
   end
 
+  @doc """
+  Creates a new connection to a Mecademic Robot with the provided connection options.
+  Expects a map with a `host` and a `port`.
+  """
   def start_link(opts \\ %{}) do
     GenServer.start_link(__MODULE__, Map.merge(@initial_state, opts))
   end
@@ -109,6 +116,9 @@ defmodule Meca do
 
   @spec encode(String.t()) :: String.t()
 
+  @doc """
+  Encodes a message before sending to the Mecademic Robot.
+  """
   def encode(msg) do
     "#{msg}\0"
   end
@@ -551,6 +561,9 @@ defmodule Meca do
 
   @spec parse_response(String.t()) :: {integer(), String.t()}
 
+  @doc """
+  Parses the raw response into the response code and body.
+  """
   def parse_response(resp) do
     trimmed = resp |> String.trim("\0")
     {parse_response_code(trimmed), parse_response_body(trimmed)}
@@ -571,6 +584,10 @@ defmodule Meca do
   @spec decode_response_body(integer(), String.t()) ::
           list(float()) | list(integer()) | String.t()
 
+  @doc """
+  Decodes the response body into float values, integer values, or a string depending
+  on the response code.
+  """
   def decode_response_body(code, body) do
     cond do
       Enum.member?(@float_response_codes, code) ->
