@@ -110,6 +110,9 @@ defmodule Meca do
 
   @spec decode(String.t()) :: String.t()
 
+  @doc """
+  Decodes response from the Mecademic Robot into useful information that can be manipulated.
+  """
   def decode(msg) do
     msg
   end
@@ -151,34 +154,59 @@ defmodule Meca do
 
   @spec get_conf(pid()) :: standard_command_response()
 
+  @doc """
+  Retrieves the current inverse kinematic configuration.
+  """
   def get_conf(pid), do: "GetConf" |> run_command(pid)
 
   @spec get_joints(pid()) :: standard_command_response()
 
+  @doc """
+  Retrieves the Mecademic Robot joint angles in degrees.
+  """
   def get_joints(pid), do: "GetJoints" |> run_command(pid)
 
   @spec get_pose(pid()) :: standard_command_response()
 
+  @doc """
+  Retrieves the current pose of the Mecademic Robot TRF with respect to the WRF.
+  """
   def get_pose(pid), do: "GetPose" |> run_command(pid)
 
   @spec pause_motion(pid()) :: standard_command_response()
 
+  @doc """
+  Stops the robot movement and holds until ResumeMotion.
+  """
   def pause_motion(pid), do: "PauseMotion" |> run_command(pid)
 
   @spec resume_motion(pid()) :: standard_command_response()
 
+  @doc """
+  Resumes the robot movement after being Paused from PauseMotion or ClearMotion.
+  """
   def resume_motion(pid), do: "ResumeMotion" |> run_command(pid)
 
   @spec clear_motion(pid()) :: standard_command_response()
 
+  @doc """
+  Stops the robot movement and deletes the rest of the robot's trajectory.
+  Holds until a ResumeMotion.
+  """
   def clear_motion(pid), do: "ClearMotion" |> run_command(pid)
 
   @spec brakes_on(pid()) :: standard_command_response()
 
+  @doc """
+  Enables the brakes of joints 1, 2 and 3, if and only if the robot is powered but deactivated.
+  """
   def brakes_on(pid), do: "BrakesOn" |> run_command(pid)
 
   @spec brakes_off(pid()) :: standard_command_response()
 
+  @doc """
+  Disables the brakes of joints 1, 2 and 3, if and only if the robot is powered but deactivated.
+  """
   def brakes_off(pid), do: "BrakesOff" |> run_command(pid)
 
   @spec home(pid()) :: standard_command_response()
@@ -202,8 +230,19 @@ defmodule Meca do
   """
   def gripper_close(pid), do: "GripperClose" |> run_command(pid)
 
-  @spec get_status_robot(pid()) :: %{atom() => integer()}
+  @spec get_status_robot(pid()) :: %{
+          :activated => integer(),
+          :homing => integer(),
+          :simulation => integer(),
+          :error => integer(),
+          :paused => integer(),
+          :eob => integer(),
+          :eom => integer()
+        }
 
+  @doc """
+  Retrieves the robot status of the Mecademic Robot.
+  """
   def get_status_robot(pid) do
     "GetStatusRobot"
     |> run_command(pid)
@@ -211,8 +250,18 @@ defmodule Meca do
     |> Enum.into(%{})
   end
 
-  @spec get_status_gripper(pid()) :: %{atom() => integer()}
+  @spec get_status_gripper(pid()) :: %{
+          :gripper_enabled => integer(),
+          :homing_state => integer(),
+          :holding_part => integer(),
+          :limit_reached => integer(),
+          :error_state => integer(),
+          :force_overload => integer()
+        }
 
+  @doc """
+  Retrieves the gripper status of the Mecademic Robot.
+  """
   def get_status_gripper(pid) do
     "GetStatusGripper"
     |> run_command(pid)
@@ -303,6 +352,10 @@ defmodule Meca do
   @spec move_lin(pid(), float(), float(), float(), float(), float(), float()) ::
           standard_command_response()
 
+  @doc """
+  Moves the Mecademic Robot tool reference in a straight line to final
+  point with specified direction.
+  """
   def move_lin(pid, x, y, z, alpha, beta, gamma) do
     build_command("MoveLin", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
   end
@@ -310,6 +363,9 @@ defmodule Meca do
   @spec move_lin_rel_trf(pid(), float(), float(), float(), float(), float(), float()) ::
           standard_command_response()
 
+  @doc """
+  Moves the Mecademic Robot tool reference frame to specified coordinates and heading.
+  """
   def move_lin_rel_trf(pid, x, y, z, alpha, beta, gamma) do
     build_command("MoveLinRelTRF", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
   end
@@ -317,6 +373,9 @@ defmodule Meca do
   @spec move_lin_rel_wrf(pid(), float(), float(), float(), float(), float(), float()) ::
           standard_command_response()
 
+  @doc """
+  Moves the Mecademic Robot world reference frame to specified coordinates and heading.
+  """
   def move_lin_rel_wrf(pid, x, y, z, alpha, beta, gamma) do
     build_command("MoveLinRelWRF", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
   end
@@ -324,36 +383,59 @@ defmodule Meca do
   @spec move_pose(pid(), float(), float(), float(), float(), float(), float()) ::
           standard_command_response()
 
+  @doc """
+  Moves the Mecademic Robot joints to have the TRF at (x, y, z) with heading (alpha, beta, gamma).
+  """
   def move_pose(pid, x, y, z, alpha, beta, gamma) do
     build_command("MovePose", [x, y, z, alpha, beta, gamma]) |> run_command(pid)
   end
 
   @spec set_blending(pid(), float()) :: standard_command_response()
 
+  @doc """
+  Sets the blending of the Mecademic Robot. Parameter `p` enables between `1` and `100` and
+  disables at `0`.
+  """
   def set_blending(pid, p) do
     build_command("SetBlending", [p]) |> run_command(pid)
   end
 
   @spec set_auto_conf(pid(), integer()) :: standard_command_response()
 
+  @doc """
+  Enables or Disables the automatic robot configuration selection and has effect only on
+  the MovePose command. Parameter `e`  enables (1) EOB or disables (0).
+  """
   def set_auto_conf(pid, e) do
     build_command("SetAutoConf", [e]) |> run_command(pid)
   end
 
   @spec set_cart_acc(pid(), float()) :: standard_command_response()
 
+  @doc """
+  Sets the cartesian accelerations of the linear and angular movements of the
+  Mecademic Robot end effector. Parameter `p` should be between `1` and `100`.
+  """
   def set_cart_acc(pid, p) do
     build_command("SetCartAcc", [p]) |> run_command(pid)
   end
 
   @spec set_cart_ang_vel(pid(), float()) :: standard_command_response()
 
+  @doc """
+  Sets the cartesian angular velocity of the Mecademic Robot TRF with respect to its WRF.
+  Parameter `w` should be between `0.001` and `180`.
+  """
   def set_cart_ang_vel(pid, w) do
     build_command("SetCartAngVel", [w]) |> run_command(pid)
   end
 
   @spec set_cart_lin_vel(pid(), float()) :: standard_command_response()
 
+  @doc """
+  Sets the cartesian linear velocity of the Mecademic Robot's TRF relative to its WRF.
+  Parameter `v` should be between `0.001` and `500`.
+  """
   def set_cart_lin_vel(pid, v) do
     build_command("SetCartLinVel", [v]) |> run_command(pid)
   end
