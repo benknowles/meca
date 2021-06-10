@@ -110,8 +110,8 @@ defmodule Meca do
   end
 
   @doc false
-  def handle_call({:command, cmd}, _, %{socket: socket} = state) do
-    :ok = :gen_tcp.send(socket, encode(cmd))
+  def handle_call({:command, command, args}, _, %{socket: socket} = state) do
+    :ok = :gen_tcp.send(socket, build_command(command, args) |> encode())
 
     {:ok, resp} = :gen_tcp.recv(socket, 0)
 
@@ -657,4 +657,16 @@ defmodule Meca do
   end
 
   defp append_eom_answer_code(list, _, _), do: list
+
+  @spec error_code?(integer()) :: boolean()
+
+  @doc """
+  Returns whether or not the response code is an error code.
+  This encompasses the 1000-1999 command errors, and general errors in the 3000 range.
+  """
+  def error_code?(code) when code in 1000..1999, do: true
+
+  def error_code?(code) when code in [3001, 3003, 3005, 3009, 3014, 3026], do: true
+
+  def error_code?(_), do: false
 end
