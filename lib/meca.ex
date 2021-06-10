@@ -29,7 +29,7 @@ defmodule Meca do
     eom: 1,
     user_eom: nil,
     error_mode: false,
-    queue: false
+    queueing: false
   }
 
   @eom_commands [
@@ -155,14 +155,14 @@ defmodule Meca do
   def handle_call(
         {:command, command, args},
         _,
-        %{socket: socket, error_mode: error_mode, queue: queue} = state
+        %{socket: socket, error_mode: error_mode, queueing: queueing} = state
       ) do
     if error_mode do
       {:reply, :error_mode, state}
     else
       :ok = :gen_tcp.send(socket, build_command(command, args) |> encode())
 
-      if queue do
+      if queueing do
         # skip receiving responses if queueing enabled
         {:reply, :queueing, state}
       else
@@ -405,7 +405,7 @@ defmodule Meca do
       eom = :sys.get_state(pid) |> Map.get(:eom)
 
       :sys.replace_state(pid, fn state ->
-        %{state | queue: true, user_eom: eom}
+        %{state | queueing: true, user_eom: eom}
       end)
 
       set_eom(pid, 0)
@@ -413,13 +413,13 @@ defmodule Meca do
       user_eom = :sys.get_state(pid) |> Map.get(:user_eom)
 
       :sys.replace_state(pid, fn state ->
-        %{state | queue: false}
+        %{state | queueing: false}
       end)
 
       set_eom(pid, user_eom)
     end
 
-    :sys.get_state(pid) |> Map.get(:queue)
+    :sys.get_state(pid) |> Map.get(:queueing)
   end
 
   @spec delay(pid(), float()) :: command_response()
