@@ -92,7 +92,7 @@ defmodule Meca do
   """
   @type command_response :: :error_mode | :queueing | String.t() | list(integer()) | list(float())
 
-  @spec run_command(pid(), String.t(), list(integer() | float())) :: command_response()
+  @spec run_command(pid(), String.t(), list(integer() | float()) | nil) :: command_response()
 
   @doc """
   Sends a command to the Mecademic Robot and receives a decoded response.
@@ -107,6 +107,35 @@ defmodule Meca do
   Sends a command to the Mecademic Robot and receives a decoded response.
   """
   def run_command(pid, command), do: run_command(pid, command, [])
+
+  @spec run_script(pid(), String.t()) :: :ok
+
+  @doc """
+  Takes a string of one command on each line, and sends the commands sequentially to
+  the Mecademic Robot.
+
+  ## Example
+
+      {:ok, pid} = Meca.start(%{host: '127.0.0.1', port: 10000})
+
+      script = \"\"\"
+      SetBlending(0)
+      SetJointVel(100)
+      MoveJoints(0,0,0,170,115,175)
+      MoveJoints(0,0,0,-170,-115,-175)
+      MoveJoints(0,0,0,170,115,175)
+      \"\"\"
+
+      Meca.run_script(pid, script)
+  """
+  def run_script(pid, script) do
+    script
+    |> String.split("\n")
+    |> Enum.map(&String.trim/1)
+    |> Enum.each(fn command ->
+      pid |> run_command(command, nil)
+    end)
+  end
 
   @doc """
   Creates a new connection to a Mecademic Robot with the provided connection options.
@@ -603,13 +632,15 @@ defmodule Meca do
     pid |> run_command("SetWRF", [x, y, z, alpha, beta, gamma])
   end
 
-  @spec build_command(String.t(), list(integer() | float() | String.t())) ::
+  @spec build_command(String.t(), list(integer() | float() | String.t()) | nil) ::
           command_response()
 
   @doc """
   Builds the command string to send to the Mecademic Robot from the function name and
   arguments the command needs.
   """
+  def build_command(command, nil), do: command
+
   def build_command(command, args) do
     case Enum.count(args) do
       0 ->
